@@ -138,15 +138,18 @@ class Game(arcade.Window):
         arcade.draw_text(f"Score: {self.agent.score}", 10, 10, arcade.csscolor.BLACK, 20)
         self.obstacles.draw()
 
-
     def on_key_press(self, key, modifiers):
         if key == arcade.key.R:
             self.agent.reset()
             self.setup()
-        if key == arcade.key.SPACE and self.is_jumping == False:
+        if key == arcade.key.SPACE and self.is_jumping is False:
             self.is_jumping = True
         if key == arcade.key.DOWN:
             self.is_lay_down = True
+
+    def on_key_release(self, key, modifiers):
+        if key == arcade.key.DOWN:
+            self.is_lay_down = False
 
     def jump(self):
         self.dinosaur.center_y += GRAVITY_CONSTANT
@@ -161,21 +164,16 @@ class Game(arcade.Window):
             self.update_enviromment()
 
         self.gravitySimulator()
-        if self.is_jumping == False and self.is_falling == False:
+        if self.is_jumping is False and self.is_falling is False:
             self.update_dinosaur_frame()
         self.agent.score += 1
 
     def update_dinosaur_frame(self):
         self.dinosaur_currentFrame += 1
-        if self.is_lay_down:
-            self.nb_laying_down_frames += 1
-
-        if self.nb_laying_down_frames > TRANSITION_FRAMES:
-            self.nb_laying_down_frames = 0
-            self.is_lay_down = False
 
         if self.dinosaur_currentFrame > 3:
             self.dinosaur_currentFrame = 1
+
         if self.dinosaur_currentFrame == 1:
             if self.is_lay_down == True:
                 self.dinosaur = arcade.Sprite("resources/dinosaur_frame4.png", 0.5)
@@ -194,7 +192,7 @@ class Game(arcade.Window):
 
     def gravitySimulator(self):
         if self.is_jumping:
-            if self.dinosaur.center_y < SCREEN_HEIGHT / 2 + JUMP_HEIGHT_SEEKED:
+            if self.dinosaur.center_y <= SCREEN_HEIGHT / 2 + JUMP_HEIGHT_SEEKED:
                 self.jump()
             else:
                 self.is_jumping = False
