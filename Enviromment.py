@@ -1,5 +1,6 @@
 import random
 from operator import attrgetter
+import numpy
 
 SCREEN_WIDTH = 1024
 SCREEN_HEIGHT = 600
@@ -15,16 +16,14 @@ DINO_SIZE = 0.7
 
 REWARD_STUCK = -6
 REWARD_DEFAULT = 1
-DEFAULT_LEARNING_RATE = 1
-DEFAULT_DISCOUNT_FACTOR = 0.5
-LINE_OBJECT_LENGTH = 10
-GRAVITY_CONSTANT = 10
-JUMP_HEIGHT_SEEKED = 80
-TRANSITION_FRAMES = 2
 
 SCROOL_SPEED = 5
 
 PREFIX_RESSOURCE = "resources/"
+
+
+def random_case():
+    return numpy.random.choice(numpy.arange(1, 10), p=[0.6, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05])
 
 class GameObject():
     def __init__(self):
@@ -49,9 +48,10 @@ class GameObject():
 
     def getCurrentSprite(self):
         frameNum = 0
-        if(len(self.sprite) != 0):
+        if (len(self.sprite) != 0):
             frameNum = self.frame % len(self.sprite)
         return self.sprite[frameNum]
+
 
 class GameObjectFactory():
     def __init__(self):
@@ -62,8 +62,7 @@ class GameObjectFactory():
         bird.sprite = ["bird1.png", "bird2.png"]
         b = random.randint(0, 2)
         if b != 0:
-            bird.y = 380
-
+            bird.y = 340
         return bird
 
     def createCactus(self):
@@ -81,12 +80,13 @@ class GameObjectFactory():
         rambdomObject = self.createCactus()
         b = random.randint(0, 2)
 
-        if(b == 1):
-            rambdomObject =  self.createBigCactus()
-        elif(b == 2):
-            rambdomObject =  self.createBird()
+        if (b == 1):
+            rambdomObject = self.createBigCactus()
+        elif (b == 2):
+            rambdomObject = self.createBird()
 
         return rambdomObject
+
 
 class Environment:
     def __init__(self):
@@ -105,7 +105,6 @@ class Environment:
         elif action == DOWN:
             new_state = (state[0] + 1, state[1])
 
-
         if new_state in self.states:
             # calculer la récompense
             if self.states[new_state] in ['#']:
@@ -118,10 +117,12 @@ class Environment:
     def update(self, scroolSpeed):
         self.__clean()
         self.scrool(scroolSpeed)
-        self.__spawn_service()
+        appendNewObstacle = random_case()
+        if appendNewObstacle == 7:
+            self.__spawn_service()
 
     def __clean(self):
-        if(len(self.gameObject) < 10):
+        if (len(self.gameObject) < 10):
             return
         del self.gameObject[0]
         self.__clean()
@@ -134,9 +135,9 @@ class Environment:
     def __spawn_service(self):
         last_spawn = 0
         if len(self.gameObject) != 0:
-            last_spawn = min(self.gameObject,key=attrgetter('scrool')).scrool
+            last_spawn = min(self.gameObject, key=attrgetter('scrool')).scrool
 
-        if(len(self.gameObject) == 0 or last_spawn > 215):
+        if (len(self.gameObject) == 0 or last_spawn > 215):
             self.spawn()
 
     def spawn(self):
@@ -158,5 +159,5 @@ def test():
 
     a.addFrame()
     print(a.getCurrentSprite())
-    #obstacles = arcade.SpriteList()
+    # obstacles = arcade.SpriteList()
     a.addScrool(10)

@@ -1,52 +1,14 @@
 import os
-import time
-from abc import abstractmethod
 
 import arcade
-import numpy
 
-from GameObject import *
+from running_dinosaur_esgi.Enviromment import *
 
-from enum import Enum
+from running_dinosaur_esgi.global_variables import *
 
+from running_dinosaur_esgi.Agent import *
 
-def random_case():
-    return numpy.random.choice(numpy.arange(1, 10), p=[0.6, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05])
-
-def random_distance():
-    distanceProb =  numpy.random.choice(numpy.arange(1, 8), p=[0.03, 0.07, 0.1, 0.15, 0.2, 0.2, 0.25])
-    if distanceProb == 1:
-        return 30
-    elif distanceProb == 2:
-        return 70
-    elif distanceProb == 3:
-        return 90
-    elif distanceProb == 4:
-        return 110
-    elif distanceProb == 5:
-        return 135
-    elif distanceProb == 6:
-        return 170
-    elif distanceProb == 7:
-        return 200
-
-class Agent:
-    def __init__(self, environment):
-        self.environment = environment
-        # self.policy = Policy(environment.states.keys(), ACTIONS)
-        self.reset()
-
-    def reset(self):
-        self.state = environment.starting_point
-        self.previous_state = self.state
-        self.score = 0
-
-
-class Policy:  # Q-table  (self, states de l'environnement, actions <<up, down>>)
-    def __init__(self, states, actions,
-                 learning_rate=DEFAULT_LEARNING_RATE,
-                 discount_factor=DEFAULT_DISCOUNT_FACTOR):
-        print('policy init')
+from running_dinosaur_esgi.Policy import *
 
 class Game(arcade.Window):
     def __init__(self, agent):
@@ -62,37 +24,29 @@ class Game(arcade.Window):
 
         self.is_falling = False
         self.is_lay_down = False
+        self.is_jumping = False
         self.dinosaur_currentFrame = 1
         self.nb_laying_down_frames = 0
-        self.nb_transition_frames = 0
+        self.nb_transition_enviromment_frames = 0
         self.update_dinosaur_xy_on_start_point()
-        self.testSprite = arcade.Sprite("resources/dinosaur_frame3.png", DINO_SIZE)
-        self.testIsCreate = False
 
         self.prepare_obstacles()
-        self.physics_engine = arcade.PhysicsEnginePlatformer(self.dinosaur,
-                                                             self.obstacles,
-                                                             1)
         self.agent.environment.update(3)
 
     def prepare_obstacles(self):
         self.obstacles = arcade.SpriteList()
 
         for n in agent.environment.gameObject:
-
             sprite = arcade.Sprite(PREFIX_RESSOURCE + n.getCurrentSprite(), DINO_SIZE)
             sprite.center_x = n.x - n.scrool
             sprite.center_y = n.y
             self.obstacles.append(sprite)
 
-
     def update_enviromment(self):
         self.agent.environment.update(15)
         self.prepare_obstacles()
-        self.physics_engine.update()
-        self.dinosaur.change_x = 20
-        if(len(arcade.check_for_collision_with_list(self.dinosaur, self.obstacles)) > 0):
-            self.gameOver()
+        #if (len(arcade.check_for_collision_with_list(self.dinosaur, self.obstacles)) > 0):
+            #self.gameOver()
 
     def update_dinosaur_xy_on_start_point(self):
         self.dinosaur.center_x = self.agent.state[0] - 30
@@ -113,10 +67,11 @@ class Game(arcade.Window):
             self.setup()
         if key == arcade.key.UP:
             self.dinosaur.change_y = 600
-            if self.physics_engine.can_jump():
-                self.dinosaur.change_y = PLAYER_JUMP_SPEED
         if key == arcade.key.DOWN:
             self.is_lay_down = True
+        if self.is_jumping is False and key == arcade.key.SPACE:
+            print('jumping')
+            self.is_jumping = True
 
     def on_key_release(self, key, modifiers):
         if key == arcade.key.DOWN:
@@ -125,16 +80,21 @@ class Game(arcade.Window):
     def fall(self):
         self.dinosaur.center_y -= GRAVITY_CONSTANT
 
+    def jump(self):
+        self.dinosaur.center_y += GRAVITY_CONSTANT
+
     def updateAndRenderGame(self, _delta_time):
-        self.nb_transition_frames += 1
-        if self.nb_transition_frames > TRANSITION_FRAMES:
-            self.nb_transition_frames = 0
+        self.nb_transition_enviromment_frames += 1
+        if self.nb_transition_enviromment_frames > TRANSITION_FRAMES:
+            self.nb_transition_enviromment_frames = 0
             self.update_enviromment()
-        if  self.is_falling is False:
+
+        self.gravitySimulator()
+        
+        if self.is_falling is False and self.is_jumping is False:
             self.update_dinosaur_frame()
 
         self.agent.score += 1
-
 
     def update_dinosaur_frame(self):
         self.dinosaur_currentFrame += 1
@@ -157,9 +117,26 @@ class Game(arcade.Window):
             self.dinosaur = arcade.Sprite("resources/dinosaur_frame3.png", DINO_SIZE)
 
         self.update_dinosaur_xy_on_start_point()
-
+    
+    def gravitySimulator(self):
+        if self.is_jumping:
+            if self.dinosaur.center_y <= SCREEN_HEIGHT / 2 + SEEKED_JUMP_HEIGHT:
+                self.jump()
+            else:
+                self.is_jumping = False
+                self.is_falling = True
+        if self.is_falling:
+            self.is_jumping = False
+            if self.dinosaur.center_y > self.agent.state[1] + 20:
+                self.fall()
+            else:
+                self.is_jumping = False
+                self.is_falling = False
+                self.update_dinosaur_xy_on_start_point()
+    
     def gameOver(self):
         print("Game Over")
+
 
 if __name__ == "__main__":
     # Initialiser l'agent
@@ -167,5 +144,5 @@ if __name__ == "__main__":
     agent = Agent(environment)
     window = Game(agent)
     window.setup()
-    arcade.schedule(window.updateAndRenderGame, 1 / 80)
+    arcade.schedule(window.updateAndRenderGame, 1 / 500)
     arcade.run()
