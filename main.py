@@ -32,19 +32,26 @@ class Environment:
         self.totalScrool = 0
 
     def apply(self, state, action):
+        #state : cordonnée de dino
         # replace 50 et 20 with the value of jumps and down
+        print("self.states =", self.states);
+        print("dino state =", state);
         if action == UP:
-            new_state = (state[0], state[1] + 50)
+            new_state = (state[0], state[1])
         elif action == DOWN:
-            new_state = (state[0], state[1] - 20)
+            new_state = (state[0], state[1])
 
+        #faire une approximation ici, gere + - 20
         if new_state in self.states:
             # calculer la récompense
             #faire un interval
-            if self.states[new_state] in ['#']:
+            if self.states[new_state] in self.states:
+                print('reward stuck')
                 reward = REWARD_STUCK
             else:
                 reward = REWARD_DEFAULT
+        else:
+            reward = REWARD_DEFAULT
 
         return new_state, reward
 
@@ -98,6 +105,7 @@ class Agent:
         return self.policy.best_action(self.state)
 
     def do(self, action):
+        print('action =', action)
         self.previous_state = self.state
         self.state, self.reward = self.environment.apply(self.state, action)
         self.score += self.reward
@@ -120,14 +128,14 @@ class Policy:  # Q-table  (self, states de l'environnement, actions <<up, down>>
                 self.table[s][a] = 0
 
     def updatePolicyWithNewStates(self, newStates):
-        print('newStates =', newStates);
-        print('self.actions =', self.actions);
+        #print('newStates =', newStates);
+        #print('self.actions =', self.actions);
         for s in newStates:#les nouveaux obstacle
             if not s in self.table: # c'est-a-dire self.table[s] est vide
                 self.table[s] = {}
                 for a in self.actions:
                     self.table[s][a] = 0
-        print('updatePolicy, self.table =', self.table)
+        #print('updatePolicy, self.table =', self.table)
 
     def updatePolicyWithDinoPosition(self, dinoState):
         if not dinoState in self.table: # c'est-a-dire self.table[dinoState] est vide
