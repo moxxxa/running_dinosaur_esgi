@@ -86,6 +86,9 @@ class Agent:
     def updatePolicyWithNewStates(self, newStates):
         self.policy.updateEnvironmentStates(newStates)
 
+    def updateEnvironmentStatesWithDinoPosition(self, dinoState):
+        self.policy.updateEnvironmentStatesWithDinoPosition(dinoState)
+
     def reset(self):
         self.state = self.environment.starting_point
         self.previous_state = self.state
@@ -118,10 +121,17 @@ class Policy:  # Q-table  (self, states de l'environnement, actions <<up, down>>
                 self.table[s][a] = 0
 
     def updateEnvironmentStates(self, newStates):
-        for s in newStates:
-            self.table[s] = {}
+        for s in newStates:#les nouveaux obstacle
+            if s in self.table is False: # c'est-a-dire self.table[s] est vide
+                self.table[s] = {}
+                for a in self.actions:
+                    self.table[s][a] = 0
+
+    def updateEnvironmentStatesWithDinoPosition(self, dinoState):
+        if dinoState in self.table is False: # c'est-a-dire self.table[dinoState] est vide
+            self.table[dinoState] = {}
             for a in self.actions:
-                self.table[s][a] = 0
+                self.table[dinoState][a] = 0
 
     def __repr__(self):
         res = ''
@@ -130,6 +140,7 @@ class Policy:  # Q-table  (self, states de l'environnement, actions <<up, down>>
         return res
 
     def best_action(self, state):
+        #state = position de dino (x,y)
         action = None
         print('self.table =', self.table)
         print('state =', state)
@@ -279,6 +290,8 @@ class Game(arcade.Window):
                 self.update_dinosaur_xy_on_start_point()
 
     def on_update(self, delta_time):
+        self.updateAndRenderGame(delta_time)
+        self.agent.updateEnvironmentStatesWithDinoPosition(self.agent.state)
         self.agent.updatePolicyWithNewStates(self.agent.environment.states.keys())
         action = self.agent.best_action()
         #self.agent.do(action)
@@ -292,5 +305,5 @@ if __name__ == "__main__":
     agent = Agent(environment)
     window = Game(agent)
     window.setup()
-    arcade.schedule(window.updateAndRenderGame, 1 / 50)
+    #arcade.schedule(window.updateAndRenderGame, 1 / 50)
     arcade.run()
