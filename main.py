@@ -32,13 +32,15 @@ class Environment:
         self.totalScrool = 0
 
     def apply(self, state, action):
+        # replace 50 et 20 with the value of jumps and down
         if action == UP:
-            new_state = (state[0] - 1, state[1])
+            new_state = (state[0], state[1] + 50)
         elif action == DOWN:
-            new_state = (state[0] + 1, state[1])
+            new_state = (state[0], state[1] - 20)
 
         if new_state in self.states:
             # calculer la récompense
+            #faire un interval
             if self.states[new_state] in ['#']:
                 reward = REWARD_STUCK
             else:
@@ -78,7 +80,11 @@ class Agent:
     def __init__(self, environment):
         self.environment = environment
         self.policy = Policy(environment.states.keys(), ACTIONS)
+        #to-do update the policy with the keys
         self.reset()
+
+    def updatePolicyWithNewStates(self, newStates):
+        self.policy.updateEnvironmentStates(newStates)
 
     def reset(self):
         self.state = self.environment.starting_point
@@ -101,12 +107,20 @@ class Policy:  # Q-table  (self, states de l'environnement, actions <<up, down>>
     def __init__(self, states, actions,
                  learning_rate=DEFAULT_LEARNING_RATE,
                  discount_factor=DEFAULT_DISCOUNT_FACTOR):
+        self.actions = actions
         self.table = {}
         self.learning_rate = learning_rate
         self.discount_factor = discount_factor
+        print('states =', states)
         for s in states:
             self.table[s] = {}
             for a in actions:
+                self.table[s][a] = 0
+
+    def updateEnvironmentStates(self, newStates):
+        for s in newStates:
+            self.table[s] = {}
+            for a in self.actions:
                 self.table[s][a] = 0
 
     def __repr__(self):
@@ -117,9 +131,13 @@ class Policy:  # Q-table  (self, states de l'environnement, actions <<up, down>>
 
     def best_action(self, state):
         action = None
-        for a in self.table[state]:
-            if action is None or self.table[state][a] > self.table[state][action]:
-                action = a
+        print('self.table =', self.table)
+        print('state =', state)
+        if bool(self.table): #check if table in not empty due to environment states update
+            for a in self.table[state]:
+                print('a =', a)
+                if action is None or self.table[state][a] > self.table[state][action]:
+                    action = a
         return action
 
     def update(self, previous_state, state, last_action, reward):
@@ -166,7 +184,7 @@ class Game(arcade.Window):
             self.obstacles.append(sprite)
 
         self.agent.environment.updateStates(self.obstacles)
-        self.agent.environment.drawEnvironment()
+        #self.agent.environment.drawEnvironment()
 
     def update_enviromment(self):
         self.agent.environment.update(15)
@@ -259,6 +277,13 @@ class Game(arcade.Window):
                 self.is_jumping = False
                 self.is_falling = False
                 self.update_dinosaur_xy_on_start_point()
+
+    def on_update(self, delta_time):
+        self.agent.updatePolicyWithNewStates(self.agent.environment.states.keys())
+        action = self.agent.best_action()
+        #self.agent.do(action)
+        #self.agent.update_policy()
+        #self.update_player_xy()
 
 
 if __name__ == "__main__":
