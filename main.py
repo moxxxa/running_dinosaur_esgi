@@ -84,10 +84,10 @@ class Agent:
         self.reset()
 
     def updatePolicyWithNewStates(self, newStates):
-        self.policy.updateEnvironmentStates(newStates)
+        self.policy.updatePolicyWithNewStates(newStates)
 
-    def updateEnvironmentStatesWithDinoPosition(self, dinoState):
-        self.policy.updateEnvironmentStatesWithDinoPosition(dinoState)
+    def updatePolicyWithDinoPosition(self, dinoState):
+        self.policy.updatePolicyWithDinoPosition(dinoState)
 
     def reset(self):
         self.state = self.environment.starting_point
@@ -114,20 +114,22 @@ class Policy:  # Q-table  (self, states de l'environnement, actions <<up, down>>
         self.table = {}
         self.learning_rate = learning_rate
         self.discount_factor = discount_factor
-        print('states =', states)
         for s in states:
             self.table[s] = {}
             for a in actions:
                 self.table[s][a] = 0
 
-    def updateEnvironmentStates(self, newStates):
+    def updatePolicyWithNewStates(self, newStates):
+        print('newStates =', newStates);
+        print('self.actions =', self.actions);
         for s in newStates:#les nouveaux obstacle
             if s in self.table is False: # c'est-a-dire self.table[s] est vide
                 self.table[s] = {}
                 for a in self.actions:
                     self.table[s][a] = 0
+        print('updatePolicy, self.table =', self.table)
 
-    def updateEnvironmentStatesWithDinoPosition(self, dinoState):
+    def updatePolicyWithDinoPosition(self, dinoState):
         if dinoState in self.table is False: # c'est-a-dire self.table[dinoState] est vide
             self.table[dinoState] = {}
             for a in self.actions:
@@ -139,14 +141,13 @@ class Policy:  # Q-table  (self, states de l'environnement, actions <<up, down>>
             res += f'{state}\t{self.table[state]}\n'
         return res
 
-    def best_action(self, state):
-        #state = position de dino (x,y)
+    def best_action(self, state):#state = position de dino (x,y)
         action = None
-        print('self.table =', self.table)
-        print('state =', state)
+        #print('self.table =', self.table)
+        #print('state =', state)
         if bool(self.table): #check if table in not empty due to environment states update
             for a in self.table[state]:
-                print('a =', a)
+                #print('a =', a)
                 if action is None or self.table[state][a] > self.table[state][action]:
                     action = a
         return action
@@ -291,7 +292,7 @@ class Game(arcade.Window):
 
     def on_update(self, delta_time):
         self.updateAndRenderGame(delta_time)
-        self.agent.updateEnvironmentStatesWithDinoPosition(self.agent.state)
+        self.agent.updatePolicyWithDinoPosition(self.agent.state)
         self.agent.updatePolicyWithNewStates(self.agent.environment.states.keys())
         action = self.agent.best_action()
         #self.agent.do(action)
