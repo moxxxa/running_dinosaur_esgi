@@ -123,14 +123,14 @@ class Policy:  # Q-table  (self, states de l'environnement, actions <<up, down>>
         print('newStates =', newStates);
         print('self.actions =', self.actions);
         for s in newStates:#les nouveaux obstacle
-            if s in self.table is False: # c'est-a-dire self.table[s] est vide
+            if not s in self.table: # c'est-a-dire self.table[s] est vide
                 self.table[s] = {}
                 for a in self.actions:
                     self.table[s][a] = 0
         print('updatePolicy, self.table =', self.table)
 
     def updatePolicyWithDinoPosition(self, dinoState):
-        if dinoState in self.table is False: # c'est-a-dire self.table[dinoState] est vide
+        if not dinoState in self.table: # c'est-a-dire self.table[dinoState] est vide
             self.table[dinoState] = {}
             for a in self.actions:
                 self.table[dinoState][a] = 0
@@ -295,7 +295,7 @@ class Game(arcade.Window):
         self.agent.updatePolicyWithDinoPosition(self.agent.state)
         self.agent.updatePolicyWithNewStates(self.agent.environment.states.keys())
         action = self.agent.best_action()
-        #self.agent.do(action)
+        self.agent.do(action)
         #self.agent.update_policy()
         #self.update_player_xy()
 
