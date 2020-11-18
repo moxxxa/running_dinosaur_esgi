@@ -2,15 +2,16 @@ import os
 
 import arcade
 
-from running_dinosaur_esgi.game_objects import *
+from game_objects import *
 
-from running_dinosaur_esgi.global_variables import *
+from global_variables import *
 
 
 GLOBAL_JUMP = False
 GLOBAL_FALL = False
 GLOBAL_LAYDOWN = False
 GLOBAL_Y = -1
+GLOBAL_X = -1
 GLOBAL_COLISION = False
 
 class Environment:
@@ -44,24 +45,23 @@ class Environment:
 
         if action == UP and GLOBAL_JUMP == False and GLOBAL_FALL == False:
             GLOBAL_JUMP = True
-            #print('11111111111111111111---JUMPING---111111111111111111111')
-        #elif action == WALK:
-            #print('33333333333333333333---Walking---3333333333333333333333')
-        elif action == DOWN and GLOBAL_FALL == False and GLOBAL_JUMP == False:
-             GLOBAL_LAYDOWN = True
-             #print('22222222222222222222---LAYDOWN---222222222222222222222')
+        elif action == DOWN and GLOBAL_LAYDOWN == False and GLOBAL_FALL == False and GLOBAL_JUMP == False:
+            GLOBAL_LAYDOWN = True
+        elif action == WALK:
+            print('Walking')
 
         if GLOBAL_COLISION:
-                reward = REWARD_STUCK
+            reward = REWARD_STUCK
+        elif action == DOWN and GLOBAL_LAYDOWN == True:
+            reward =  REWARD_DOWN
+        elif action == UP and  GLOBAL_JUMP == True:
+            reward =  REWARD_UP
         else:
             reward = REWARD_DEFAULT # make reward default equal to zero and take account only the global score
 
         GLOBAL_COLISION = False
 
-        #il faut arrondi le x et le y du prochaine obstacle sinon ça va avoir une infinité
-        #return (state[0], GLOBAL_Y, prochainX, prochainY), reward
-        return (state[0], GLOBAL_Y), reward
-
+        return self.full_state(), reward
 
     def update(self, scroolSpeed):
         self.scrool(scroolSpeed)
@@ -90,6 +90,37 @@ class Environment:
     def spawn(self):
         self.gameObject.append(self.gameObjectFactory.createRambdomObject())
 
+    def get_env_state(self):
+        newlist = list(self.states.keys())
+
+        emptyTuple = (0,0)
+        for i in range(3):
+            if len(newlist) < 3:
+                newlist.append(emptyTuple)
+
+        return newlist
+
+    def full_state(self):
+        newlist = list()
+        fullState = self.get_env_state()
+        fullState.insert(0, (GLOBAL_X, GLOBAL_Y))
+
+        newlist.append(fullState[0][0])
+        newlist.append(fullState[0][1])
+        newlist.append(fullState[1][0])
+        newlist.append(fullState[1][1])
+
+        return tuple(newlist)
+
+    def real_full_state(self):
+        newlist = list()
+        fullState = self.get_env_state()
+        fullState.insert(0, (GLOBAL_X, GLOBAL_Y))
+        for i in fullState:
+            newlist.append(i[0])
+            newlist.append(i[1])
+        return tuple(newlist)
+
 
 class Agent:
     def __init__(self, environment):
@@ -116,12 +147,17 @@ class Agent:
         #print('action =', action)
         self.previous_state = self.state
         self.state, self.reward = self.environment.apply(self.state, action)
-        # print('after the do, state =', self.state, '   self.reward =', self.reward);
+        #print('after the do, state =', self.state, '   self.reward =', self.reward);
         self.score += self.reward
         self.last_action = action
 
     def update_policy(self):
         self.policy.update(agent.previous_state, agent.state, self.last_action, self.reward)
+
+    def full_state(self):
+        fullState = self.environment.get_env_state()
+        fullState.insert(0, self.agent.state)
+        return fullState
 
 class Policy:  # Q-table  (self, states de l'environnement, actions <<up, down>>)
     def __init__(self, states, actions,
@@ -131,10 +167,14 @@ class Policy:  # Q-table  (self, states de l'environnement, actions <<up, down>>
         self.table = {}
         self.learning_rate = learning_rate
         self.discount_factor = discount_factor
+        for s in states:
+            self.table[s] = {}
+            for a in actions:
+                self.table[s][a] = 0
 
     def updatePolicyWithNewStates(self, newStates):
-        #new states contient tous les positions des obstacles present dans l'écran, generalement c'est entre deux et un obstacle à la fois, on peut avoir trois obstacle mais c'est rare
-
+        #print('newStates =', newStates);
+        #print('self.actions =', self.actions);
         for s in newStates:#les nouveaux obstacle
             if not s in self.table: # c'est-a-dire self.table[s] est vide
                 self.table[s] = {}
@@ -143,6 +183,7 @@ class Policy:  # Q-table  (self, states de l'environnement, actions <<up, down>>
         #print('updatePolicy, self.table =', self.table)
 
     def updatePolicyWithDinoPosition(self, dinoState):
+        print(dinoState)
         if not dinoState in self.table: # c'est-a-dire self.table[dinoState] est vide
             self.table[dinoState] = {}
             for a in self.actions:
@@ -171,7 +212,6 @@ class Policy:  # Q-table  (self, states de l'environnement, actions <<up, down>>
             self.table[previous_state][last_action] += self.learning_rate * \
                                                        (reward + self.discount_factor * maxQ - self.table[previous_state][
                                                            last_action])
-        print('table =', self.table);
 
 
 def gameOver():
@@ -214,13 +254,10 @@ class Game(arcade.Window):
             sprite.center_y = n.y
             self.obstacles.append(sprite)
 
-
-        #en met à jour l'environnement avec les obstact car les obstacle ça bouje le scrool
         self.agent.environment.updateStates(self.obstacles)
-        #self.agent.environment.drawEnvironment() #permet de dessiner l'environnement
+        #self.agent.environment.drawEnvironment()
 
     def update_enviromment(self):
-        #pour modifier une variable global il faut faire global non de la variable
         global GLOBAL_COLISION
         self.agent.environment.update(15)
         self.prepare_obstacles()
@@ -280,7 +317,6 @@ class Game(arcade.Window):
 
         #self.agent.score += 1
 
-    #ici dino qui saute et baisse la tete au mm temps
     def update_dinosaur_frame(self):
         self.dinosaur_currentFrame += 1
         if self.dinosaur_currentFrame > 10:
@@ -324,16 +360,20 @@ class Game(arcade.Window):
 
     def on_update(self, delta_time):
         global GLOBAL_Y
-        GLOBAL_Y = self.dinosaur.center_y
+        GLOBAL_Y = round(self.dinosaur.center_y)
+        global GLOBAL_X
+        GLOBAL_X = round(self.dinosaur.center_x)
         self.updateAndRenderGame(delta_time)
+
         self.agent.updatePolicyWithDinoPosition(self.agent.state)
-        #self.agent.updatePolicyWithNewStates(self.agent.environment.states.keys())
+
         action = self.agent.best_action()
         self.agent.do(action)
         self.agent.update_policy()
 
 
 if __name__ == "__main__":
+
     # Initialiser l'agent
     environment = Environment()
     agent = Agent(environment)
