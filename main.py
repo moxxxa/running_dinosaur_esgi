@@ -7,6 +7,12 @@ from running_dinosaur_esgi.game_objects import *
 from running_dinosaur_esgi.global_variables import *
 
 
+GLOBAL_JUMP = False
+GLOBAL_FALL = False
+GLOBAL_LAYDOWN = False
+GLOBAL_Y = -1
+GLOBAL_COLISION = False
+
 class Environment:
     def __init__(self):
         self.states = {}
@@ -32,28 +38,25 @@ class Environment:
         self.totalScrool = 0
 
     def apply(self, state, action):
-        #state : cordonnée de dino
-        # replace 50 et 20 with the value of jumps and down
-        print("self.states =", self.states);
-        print("dino state =", state);
-        if action == UP:
-            new_state = (state[0], state[1])
-        elif action == DOWN:
-            new_state = (state[0], state[1])
+        global GLOBAL_JUMP
+        global GLOBAL_LAYDOWN
+        global GLOBAL_COLISION
 
-        #faire une approximation ici, gere + - 20
-        if new_state in self.states:
-            # calculer la récompense
-            #faire un interval
-            if self.states[new_state] in self.states:
-                print('reward stuck')
+        if action == UP and GLOBAL_JUMP == False and GLOBAL_FALL == False:
+            GLOBAL_JUMP = True
+        elif action == DOWN and GLOBAL_LAYDOWN == False and GLOBAL_FALL == False and GLOBAL_JUMP == False:
+            GLOBAL_LAYDOWN = True
+        elif action == WALK:
+            print('Walking')
+
+        if GLOBAL_COLISION:
                 reward = REWARD_STUCK
-            else:
-                reward = REWARD_DEFAULT
         else:
-            reward = REWARD_DEFAULT
+            reward = REWARD_DEFAULT # make reward default equal to zero and take account only the global score
 
-        return new_state, reward
+        GLOBAL_COLISION = False
+
+        return (state[0], GLOBAL_Y), reward
 
     def update(self, scroolSpeed):
         self.scrool(scroolSpeed)
@@ -105,9 +108,10 @@ class Agent:
         return self.policy.best_action(self.state)
 
     def do(self, action):
-        print('action =', action)
+        #print('action =', action)
         self.previous_state = self.state
         self.state, self.reward = self.environment.apply(self.state, action)
+        print('after the do, state =', self.state, '   self.reward =', self.reward);
         self.score += self.reward
         self.last_action = action
 
@@ -155,17 +159,17 @@ class Policy:  # Q-table  (self, states de l'environnement, actions <<up, down>>
         #print('state =', state)
         if bool(self.table): #check if table in not empty due to environment states update
             for a in self.table[state]:
-                #print('a =', a)
                 if action is None or self.table[state][a] > self.table[state][action]:
                     action = a
         return action
 
     def update(self, previous_state, state, last_action, reward):
         # Q(st, at) = Q(st, at) + learning_rate * (reward + discount_factor * max(Q(state)) - Q(st, at))
-        maxQ = max(self.table[state].values())
-        self.table[previous_state][last_action] += self.learning_rate * \
-                                                   (reward + self.discount_factor * maxQ - self.table[previous_state][
-                                                       last_action])
+        if state in self.table:
+            maxQ = max(self.table[state].values())
+            self.table[previous_state][last_action] += self.learning_rate * \
+                                                       (reward + self.discount_factor * maxQ - self.table[previous_state][
+                                                           last_action])
 
 
 def gameOver():
@@ -182,9 +186,14 @@ class Game(arcade.Window):
         self.dinosaur = arcade.Sprite("resources/dinosaur_frame3.png", DINO_SIZE)
 
     def setup(self):
-        self.is_falling = False
-        self.is_lay_down = False
-        self.is_jumping = False
+        global GLOBAL_JUMP
+        global GLOBAL_LAYDOWN
+        global GLOBAL_FALL
+        global GLOBAL_COLISION
+        GLOBAL_COLISION = False
+        GLOBAL_JUMP = False
+        GLOBAL_FALL = False
+        GLOBAL_LAYDOWN = False
         self.dinosaur_currentFrame = 1
         self.nb_laying_down_frames = 0
         self.nb_transition_enviromment_frames = 0
@@ -207,14 +216,15 @@ class Game(arcade.Window):
         #self.agent.environment.drawEnvironment()
 
     def update_enviromment(self):
+        global GLOBAL_COLISION
         self.agent.environment.update(15)
         self.prepare_obstacles()
-        # if (len(arcade.check_for_collision_with_list(self.dinosaur, self.obstacles)) > 0):
-        # self.gameOver()
+        if (len(arcade.check_for_collision_with_list(self.dinosaur, self.obstacles)) > 0):
+            GLOBAL_COLISION = True
 
     def update_dinosaur_xy_on_start_point(self):
-        self.dinosaur.center_x = self.agent.state[0] - 30
-        self.dinosaur.center_y = self.agent.state[1] + 30
+        self.dinosaur.center_x = self.agent.environment.starting_point[0] - 30
+        self.dinosaur.center_y = self.agent.environment.starting_point[1] + 30
 
     def on_draw(self):
         arcade.start_render()
@@ -226,20 +236,23 @@ class Game(arcade.Window):
         self.obstacles.draw()
 
     def on_key_press(self, key, modifiers):
+        global GLOBAL_JUMP
+        global GLOBAL_LAYDOWN
         if key == arcade.key.R:
             self.agent.reset()
             self.setup()
         if key == arcade.key.UP:
             self.dinosaur.change_y = 600
         if key == arcade.key.DOWN:
-            self.is_lay_down = True
-        if self.is_jumping is False and key == arcade.key.SPACE:
+            GLOBAL_LAYDOWN = True
+        if GLOBAL_JUMP == False and key == arcade.key.SPACE:
             print('jumping')
-            self.is_jumping = True
+            GLOBAL_JUMP = True
 
     def on_key_release(self, key, modifiers):
+        global GLOBAL_LAYDOWN
         if key == arcade.key.DOWN:
-            self.is_lay_down = False
+            GLOBAL_LAYDOWN = False
 
     def fall(self):
         self.dinosaur.center_y -= GRAVITY_CONSTANT
@@ -248,6 +261,7 @@ class Game(arcade.Window):
         self.dinosaur.center_y += GRAVITY_CONSTANT
 
     def updateAndRenderGame(self, _delta_time):
+        global GLOBAL_LAYDOWN
         self.nb_transition_enviromment_frames += 1
         if self.nb_transition_enviromment_frames > TRANSITION_FRAMES:
             self.nb_transition_enviromment_frames = 0
@@ -255,10 +269,11 @@ class Game(arcade.Window):
 
         self.gravitySimulator()
 
-        if self.is_falling is False and self.is_jumping is False:
+
+        if GLOBAL_FALL == False and GLOBAL_JUMP == False:
             self.update_dinosaur_frame()
 
-        self.agent.score += 1
+        #self.agent.score += 1
 
     def update_dinosaur_frame(self):
         self.dinosaur_currentFrame += 1
@@ -266,16 +281,16 @@ class Game(arcade.Window):
             self.dinosaur_currentFrame = 1
 
         if self.dinosaur_currentFrame <= 5:
-            if self.is_lay_down == True:
+            if GLOBAL_LAYDOWN == True:
                 self.dinosaur = arcade.Sprite("resources/dinosaur_frame4.png", DINO_SIZE)
             else:
                 self.dinosaur = arcade.Sprite("resources/dinosaur_frame1.png", DINO_SIZE)
         elif self.dinosaur_currentFrame > 5:
-            if self.is_lay_down == True:
+            if GLOBAL_LAYDOWN == True:
                 self.dinosaur = arcade.Sprite("resources/dinosaur_frame5.png", DINO_SIZE)
             else:
                 self.dinosaur = arcade.Sprite("resources/dinosaur_frame2.png", DINO_SIZE)
-        elif self.is_lay_down == True:
+        elif GLOBAL_LAYDOWN == True:
             self.dinosaur = arcade.Sprite("resources/dinosaur_frame4.png", DINO_SIZE)
         else:
             self.dinosaur = arcade.Sprite("resources/dinosaur_frame3.png", DINO_SIZE)
@@ -283,29 +298,33 @@ class Game(arcade.Window):
         self.update_dinosaur_xy_on_start_point()
 
     def gravitySimulator(self):
-        if self.is_jumping:
+        global GLOBAL_JUMP
+        global GLOBAL_LAYDOWN
+        global GLOBAL_FALL
+        if GLOBAL_JUMP:
             if self.dinosaur.center_y <= SCREEN_HEIGHT / 2 + SEEKED_JUMP_HEIGHT:
                 self.jump()
             else:
-                self.is_jumping = False
-                self.is_falling = True
-        if self.is_falling:
-            self.is_jumping = False
-            if self.dinosaur.center_y > self.agent.state[1] + 30:
+                GLOBAL_FALL = True
+
+
+        if GLOBAL_FALL:
+            GLOBAL_JUMP = False
+            if self.dinosaur.center_y > self.agent.environment.starting_point[1] + 30:
                 self.fall()
             else:
-                self.is_jumping = False
-                self.is_falling = False
+                GLOBAL_FALL = False
                 self.update_dinosaur_xy_on_start_point()
 
     def on_update(self, delta_time):
+        global GLOBAL_Y
+        GLOBAL_Y = self.dinosaur.center_y
         self.updateAndRenderGame(delta_time)
         self.agent.updatePolicyWithDinoPosition(self.agent.state)
         self.agent.updatePolicyWithNewStates(self.agent.environment.states.keys())
         action = self.agent.best_action()
         self.agent.do(action)
-        #self.agent.update_policy()
-        #self.update_player_xy()
+        self.agent.update_policy()
 
 
 if __name__ == "__main__":
