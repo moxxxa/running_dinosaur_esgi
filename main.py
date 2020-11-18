@@ -44,10 +44,12 @@ class Environment:
 
         if action == UP and GLOBAL_JUMP == False and GLOBAL_FALL == False:
             GLOBAL_JUMP = True
-        elif action == DOWN and GLOBAL_LAYDOWN == False and GLOBAL_FALL == False and GLOBAL_JUMP == False:
-            GLOBAL_LAYDOWN = True
-        elif action == WALK:
-            print('Walking')
+            #print('11111111111111111111---JUMPING---111111111111111111111')
+        #elif action == WALK:
+            #print('33333333333333333333---Walking---3333333333333333333333')
+        elif action == DOWN and GLOBAL_FALL == False and GLOBAL_JUMP == False:
+             GLOBAL_LAYDOWN = True
+             #print('22222222222222222222---LAYDOWN---222222222222222222222')
 
         if GLOBAL_COLISION:
                 reward = REWARD_STUCK
@@ -56,7 +58,10 @@ class Environment:
 
         GLOBAL_COLISION = False
 
+        #il faut arrondi le x et le y du prochaine obstacle sinon ça va avoir une infinité
+        #return (state[0], GLOBAL_Y, prochainX, prochainY), reward
         return (state[0], GLOBAL_Y), reward
+
 
     def update(self, scroolSpeed):
         self.scrool(scroolSpeed)
@@ -111,7 +116,7 @@ class Agent:
         #print('action =', action)
         self.previous_state = self.state
         self.state, self.reward = self.environment.apply(self.state, action)
-        print('after the do, state =', self.state, '   self.reward =', self.reward);
+        # print('after the do, state =', self.state, '   self.reward =', self.reward);
         self.score += self.reward
         self.last_action = action
 
@@ -126,14 +131,10 @@ class Policy:  # Q-table  (self, states de l'environnement, actions <<up, down>>
         self.table = {}
         self.learning_rate = learning_rate
         self.discount_factor = discount_factor
-        for s in states:
-            self.table[s] = {}
-            for a in actions:
-                self.table[s][a] = 0
 
     def updatePolicyWithNewStates(self, newStates):
-        #print('newStates =', newStates);
-        #print('self.actions =', self.actions);
+        #new states contient tous les positions des obstacles present dans l'écran, generalement c'est entre deux et un obstacle à la fois, on peut avoir trois obstacle mais c'est rare
+
         for s in newStates:#les nouveaux obstacle
             if not s in self.table: # c'est-a-dire self.table[s] est vide
                 self.table[s] = {}
@@ -170,6 +171,7 @@ class Policy:  # Q-table  (self, states de l'environnement, actions <<up, down>>
             self.table[previous_state][last_action] += self.learning_rate * \
                                                        (reward + self.discount_factor * maxQ - self.table[previous_state][
                                                            last_action])
+        print('table =', self.table);
 
 
 def gameOver():
@@ -212,10 +214,13 @@ class Game(arcade.Window):
             sprite.center_y = n.y
             self.obstacles.append(sprite)
 
+
+        #en met à jour l'environnement avec les obstact car les obstacle ça bouje le scrool
         self.agent.environment.updateStates(self.obstacles)
-        #self.agent.environment.drawEnvironment()
+        #self.agent.environment.drawEnvironment() #permet de dessiner l'environnement
 
     def update_enviromment(self):
+        #pour modifier une variable global il faut faire global non de la variable
         global GLOBAL_COLISION
         self.agent.environment.update(15)
         self.prepare_obstacles()
@@ -275,6 +280,7 @@ class Game(arcade.Window):
 
         #self.agent.score += 1
 
+    #ici dino qui saute et baisse la tete au mm temps
     def update_dinosaur_frame(self):
         self.dinosaur_currentFrame += 1
         if self.dinosaur_currentFrame > 10:
@@ -321,7 +327,7 @@ class Game(arcade.Window):
         GLOBAL_Y = self.dinosaur.center_y
         self.updateAndRenderGame(delta_time)
         self.agent.updatePolicyWithDinoPosition(self.agent.state)
-        self.agent.updatePolicyWithNewStates(self.agent.environment.states.keys())
+        #self.agent.updatePolicyWithNewStates(self.agent.environment.states.keys())
         action = self.agent.best_action()
         self.agent.do(action)
         self.agent.update_policy()
