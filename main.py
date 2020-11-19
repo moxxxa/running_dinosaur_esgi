@@ -65,9 +65,9 @@ class Environment:
 
     def update(self, scroolSpeed):
         self.scrool(scroolSpeed)
-        appendNewObstacle = random_case()
-        if appendNewObstacle == 7:
-            self.__spawn_service()
+        # appendNewObstacle = random_case()
+        #if appendNewObstacle == 7:
+        self.__spawn_service()
 
     def clean(self):
         if (len(self.gameObject) > 0):
@@ -84,7 +84,7 @@ class Environment:
         if len(self.gameObject) != 0:
             last_spawn = min(self.gameObject, key=attrgetter('scrool')).scrool
 
-        if (len(self.gameObject) == 0 or last_spawn > 215):
+        if (len(self.gameObject) == 0 or last_spawn > 550):
             self.spawn()
 
     def spawn(self):
@@ -103,12 +103,19 @@ class Environment:
     def full_state(self):
         newlist = list()
         fullState = self.get_env_state()
+
         fullState.insert(0, (GLOBAL_X, GLOBAL_Y))
 
-        newlist.append(fullState[0][0])
-        newlist.append(fullState[0][1])
-        newlist.append(fullState[1][0])
-        newlist.append(fullState[1][1])
+        newlist.append(fullState[0][0] // 10)
+        newlist.append(fullState[0][1] // 10)
+        if(fullState[1][0] // 10 < 70):
+            newlist.append(fullState[1][0] // 10)
+            newlist.append(fullState[1][1] // 10)
+        else:
+            newlist.append(0)
+            newlist.append(0)
+
+
 
         return tuple(newlist)
 
@@ -224,8 +231,13 @@ class Game(arcade.Window):
         file_path = os.path.dirname(os.path.abspath(__file__))
         os.chdir(file_path)
         self.agent = agent
+        self.initialAgent = agent
         self.background = arcade.load_texture("resources/background.png")
         self.dinosaur = arcade.Sprite("resources/dinosaur_frame3.png", DINO_SIZE)
+
+    def initEnv(self):
+        self.agent = self.initialAgent
+
 
     def setup(self):
         global GLOBAL_JUMP
@@ -263,6 +275,7 @@ class Game(arcade.Window):
         self.prepare_obstacles()
         if (len(arcade.check_for_collision_with_list(self.dinosaur, self.obstacles)) > 0):
             GLOBAL_COLISION = True
+            self.initEnv()
 
     def update_dinosaur_xy_on_start_point(self):
         self.dinosaur.center_x = self.agent.environment.starting_point[0] - 30
