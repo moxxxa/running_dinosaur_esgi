@@ -13,13 +13,18 @@ GLOBAL_LAYDOWN = False
 GLOBAL_Y = -1
 GLOBAL_X = -1
 GLOBAL_COLISION = False
+GLOBAL_GAME_OVER = False
 
 class Environment:
     def __init__(self):
+        self.reset()
+
+    def reset(self):
         self.states = {}
         self.height = SCREEN_HEIGHT
         self.width = SCREEN_WIDTH
         self.starting_point = (SCREEN_WIDTH / 6, SCREEN_HEIGHT / 2)
+        self.lastJump = ()
         self.setup()
 
     def updateStates(self, obstacles):
@@ -42,26 +47,33 @@ class Environment:
         global GLOBAL_JUMP
         global GLOBAL_LAYDOWN
         global GLOBAL_COLISION
+        global GLOBAL_GAME_OVER
 
-        if action == UP and GLOBAL_JUMP == False and GLOBAL_FALL == False:
-            GLOBAL_JUMP = True
-        elif action == DOWN and GLOBAL_LAYDOWN == False and GLOBAL_FALL == False and GLOBAL_JUMP == False:
-            GLOBAL_LAYDOWN = True
-        elif action == WALK:
-            print('Walking')
+        fullState = self.full_state()
 
         if GLOBAL_COLISION:
             reward = REWARD_STUCK
-        elif action == DOWN and GLOBAL_LAYDOWN == True:
-            reward =  REWARD_DOWN
-        elif action == UP and  GLOBAL_JUMP == True:
+            GLOBAL_GAME_OVER = True
+        elif action == UP and GLOBAL_JUMP == False:
+            GLOBAL_JUMP = True
             reward =  REWARD_UP
+            self.lastJump = fullState
+        elif action == DOWN and GLOBAL_LAYDOWN == False and GLOBAL_JUMP == False:
+            GLOBAL_LAYDOWN = True
+            reward =  REWARD_DOWN
+        elif action == WALK:
+            GLOBAL_LAYDOWN = False
+            reward = REWARD_WALK
+        elif action == UP and GLOBAL_JUMP == True:
+            GLOBAL_LAYDOWN = False
+            reward = REWARD_WALK
         else:
-            reward = REWARD_DEFAULT # make reward default equal to zero and take account only the global score
+            GLOBAL_LAYDOWN = False
+            reward = REWARD_DEFAULT
 
         GLOBAL_COLISION = False
 
-        return self.full_state(), reward
+        return fullState, reward
 
     def update(self, scroolSpeed):
         self.scrool(scroolSpeed)
@@ -84,7 +96,7 @@ class Environment:
         if len(self.gameObject) != 0:
             last_spawn = min(self.gameObject, key=attrgetter('scrool')).scrool
 
-        if (len(self.gameObject) == 0 or last_spawn > 550):
+        if (len(self.gameObject) == 0 or last_spawn > 750):
             self.spawn()
 
     def spawn(self):
@@ -106,14 +118,10 @@ class Environment:
 
         fullState.insert(0, (GLOBAL_X, GLOBAL_Y))
 
-        newlist.append(fullState[0][0] // 10)
-        newlist.append(fullState[0][1] // 10)
-        if(fullState[1][0] // 10 < 70):
-            newlist.append(fullState[1][0] // 10)
-            newlist.append(fullState[1][1] // 10)
-        else:
-            newlist.append(0)
-            newlist.append(0)
+        newlist.append(round(fullState[0][0]))
+        newlist.append(fullState[0][1])
+        newlist.append(fullState[1][0])
+        newlist.append(fullState[1][1])
 
 
 
@@ -132,9 +140,16 @@ class Environment:
 class Agent:
     def __init__(self, environment):
         self.environment = environment
+        self.first_evironment = environment
         self.policy = Policy(environment.states.keys(), ACTIONS)
         #to-do update the policy with the keys
         self.reset()
+        self.lasts_actions = list()
+
+    def gameOver(self):
+        self.reset()
+        self.environment.reset()
+        self.policy.clear_memory_queu()
 
     def updatePolicyWithNewStates(self, newStates):
         self.policy.updatePolicyWithNewStates(newStates)
@@ -158,6 +173,7 @@ class Agent:
         self.score += self.reward
         self.last_action = action
 
+
     def update_policy(self):
         self.policy.update(agent.previous_state, agent.state, self.last_action, self.reward)
 
@@ -174,14 +190,9 @@ class Policy:  # Q-table  (self, states de l'environnement, actions <<up, down>>
         self.table = {}
         self.learning_rate = learning_rate
         self.discount_factor = discount_factor
-        for s in states:
-            self.table[s] = {}
-            for a in actions:
-                self.table[s][a] = 0
+        self.memory_queu = list()
 
     def updatePolicyWithNewStates(self, newStates):
-        #print('newStates =', newStates);
-        #print('self.actions =', self.actions);
         for s in newStates:#les nouveaux obstacle
             if not s in self.table: # c'est-a-dire self.table[s] est vide
                 self.table[s] = {}
@@ -190,7 +201,6 @@ class Policy:  # Q-table  (self, states de l'environnement, actions <<up, down>>
         #print('updatePolicy, self.table =', self.table)
 
     def updatePolicyWithDinoPosition(self, dinoState):
-        print(dinoState)
         if not dinoState in self.table: # c'est-a-dire self.table[dinoState] est vide
             self.table[dinoState] = {}
             for a in self.actions:
@@ -214,15 +224,32 @@ class Policy:  # Q-table  (self, states de l'environnement, actions <<up, down>>
 
     def update(self, previous_state, state, last_action, reward):
         # Q(st, at) = Q(st, at) + learning_rate * (reward + discount_factor * max(Q(state)) - Q(st, at))
+        #newLastAction = (previous_state, state, last_action,reward)
+        #self.memory_queu.append(newLastAction)
+        #self.update_memory_queu()
+        self.updateQtable(previous_state, state, last_action, reward)
+
+    def update_memory_queu(self):
+        if(len(self.memory_queu) > 20):
+            queu = self.memory_queu.pop()
+            self.updateQtable(queu[0], queu[1], queu[2], queu[3])
+            self.update_memory_queu()
+
+    def clear_memory_queu(self):
+        i = len(self.memory_queu)
+        for queu in self.memory_queu:
+            self.updateQtable(queu[0], queu[1], queu[2], queu[3] + (REWARD_STUCK // i))
+            print("OOVVEERR : " + str(queu[3] + (REWARD_STUCK // i)))
+            i -= 1
+        self.memory_queu = list()
+
+    def updateQtable(self, previous_state, state, last_action, reward):
         if state in self.table:
             maxQ = max(self.table[state].values())
             self.table[previous_state][last_action] += self.learning_rate * \
                                                        (reward + self.discount_factor * maxQ - self.table[previous_state][
                                                            last_action])
 
-
-def gameOver():
-    print("Game Over")
 
 
 class Game(arcade.Window):
@@ -271,7 +298,7 @@ class Game(arcade.Window):
 
     def update_enviromment(self):
         global GLOBAL_COLISION
-        self.agent.environment.update(15)
+        self.agent.environment.update(10)
         self.prepare_obstacles()
         if (len(arcade.check_for_collision_with_list(self.dinosaur, self.obstacles)) > 0):
             GLOBAL_COLISION = True
@@ -320,8 +347,8 @@ class Game(arcade.Window):
         self.nb_transition_enviromment_frames += 1
         if self.nb_transition_enviromment_frames > TRANSITION_FRAMES:
             self.nb_transition_enviromment_frames = 0
-            self.update_enviromment()
 
+        self.update_enviromment()
         self.gravitySimulator()
 
 
@@ -372,6 +399,7 @@ class Game(arcade.Window):
                 self.update_dinosaur_xy_on_start_point()
 
     def on_update(self, delta_time):
+        global GLOBAL_COLISION
         global GLOBAL_Y
         GLOBAL_Y = round(self.dinosaur.center_y)
         global GLOBAL_X
@@ -383,6 +411,11 @@ class Game(arcade.Window):
         action = self.agent.best_action()
         self.agent.do(action)
         self.agent.update_policy()
+
+        global GLOBAL_GAME_OVER
+        if GLOBAL_GAME_OVER:
+            self.agent.gameOver()
+            GLOBAL_GAME_OVER = False
 
 
 if __name__ == "__main__":

@@ -38,7 +38,7 @@ class GameObject():
 
 class GameObjectFactory():
     def __init__(self):
-        print("init Factory")
+        pass
 
     def createBird(self):
         bird = GameObject()
@@ -46,6 +46,7 @@ class GameObjectFactory():
         b = random.randint(0, 2)
         if b != 0:
             bird.y = 380
+        bird.y = 380
         return bird
 
     def createCactus(self):
@@ -68,4 +69,4 @@ class GameObjectFactory():
         elif (b == 2):
             rambdomObject = self.createBird()
 
-        return rambdomObject
+        return self.createBird()
