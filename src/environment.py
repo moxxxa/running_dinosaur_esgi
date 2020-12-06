@@ -23,13 +23,10 @@ class Environment:
         self.ground_list.pop(1280)
         self.enemy_list.scrool()
         self.enemy_list.pop(1280)
-
         self.update_collision()
         self.total_scrool += SCROOL_SPEED
 
     def apply(self, action):
-        reward = REWARD_DEFAULT
-
         if action == UP and self.physique_engine.can_jump():
             self.last_jump = self.agent.get_state()
             reward = REWARD_UP
@@ -45,19 +42,17 @@ class Environment:
 
         if self.enemy_list.delete:
             reward += 200
-            print("salut")
             self.enemy_list.delete = False
 
         if self.collision:
             reward = REWARD_STUCK
 
-
         return reward
 
     def reset(self):
         self.factory = Game_object_factory()
-        self.ground_list = self.factory.initGround()
-        self.enemy_list = self.factory.init_enemy()
+        self.ground_list = self.factory.init_grounds_list()
+        self.enemy_list = self.factory.init_enemies_list()
         self.reward = 0
         self.collision = False
         self.isDown = False
@@ -98,14 +93,17 @@ class Policy:  # Q-table  (self, states de l'environnement, actions <<up, down>>
         if not state in self.table:
             self.table[state] = {}
             for action in self.actions:
-                self.table[state][action] = 0
+                self.table[state][action] = REWARD_DEFAULT
                 if action == UP:
-                    self.table[state][action] = 0
+                    self.table[state][action] = REWARD_UP
                 elif action == DOWN:
-                    self.table[state][action] = 0
+                    self.table[state][action] = REWARD_DOWN
 
         maxQ = max(self.table[state].values())
 
         self.table[previous_state][last_action] += learning_rate * \
                                                    (reward + self.discount_factor * maxQ - self.table[previous_state][
                                                        last_action])
+
+
+

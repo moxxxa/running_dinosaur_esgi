@@ -11,7 +11,7 @@ class Game_object_factory():
     def __init__(self):
         pass
 
-    def initGround(self):
+    def init_grounds_list(self):
         image_source = "images/grassHalf_mid.png"
         ground_list = listWall(64)
         for x in range(-64, 1344, 64):
@@ -21,7 +21,7 @@ class Game_object_factory():
             ground_list.append(wall)
         return ground_list
 
-    def init_enemy(self):
+    def init_enemies_list(self):
         image_source = "images/bird1.png"
         enemy_list = listWall(1280)
         for x in range(1344, 4032, 1344):

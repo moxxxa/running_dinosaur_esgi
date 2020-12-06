@@ -57,7 +57,6 @@ class Agent(Game_object):
         self.previous_state3 = self.previous_state2
         self.previous_state2 = self.previous_state
         self.previous_state = self.state
-
         self.state = self.get_state()
 
         self.reward = self.environment.apply(action)
@@ -85,6 +84,7 @@ class Window(arcade.Window):
         self.stage = 0
         arcade.set_background_color(arcade.csscolor.WHITE)
         self.dead = 0
+        self.max_score = 0
 
     def setup(self):
         self.player_list = arcade.SpriteList()
@@ -113,14 +113,15 @@ class Window(arcade.Window):
         if self.agent.environment.collision:
             self.agent.reward = REWARD_STUCK
             self.agent.update_policy()
+            if self.max_score < self.agent.score:
+                self.max_score = self.agent.score
             self.agent.environment.collision = False
             self.agent.reset()
             self.dead += 1
-            print("dead : " + str(self.dead))
+
+            print("dead : " + str(self.dead) + "  /  " + str(self.max_score))
             print(self.agent.state)
-            print(self.agent.previous_state)
-            print(self.agent.previous_state2)
-            print(self.agent.previous_state3)
+            print(str(self.agent.previous_state) + "   /  " + str(self.agent.last_action))
             print(self.agent.reward)
 
     def on_key_press(self, key, modifiers):
