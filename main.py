@@ -104,7 +104,9 @@ class Window(arcade.Window):
         self.agent.environment.update()
         self.stage += 1
 
-        if self.stage % 10 == 0:
+        state = self.agent.get_state()
+
+        if self.stage % 5 == 0 or state[2] == 224:
             if self.agent.environment.can_jump():
                 action = self.agent.best_action()
                 self.agent.do(action)
@@ -119,10 +121,8 @@ class Window(arcade.Window):
             self.agent.reset()
             self.dead += 1
 
-            print("dead : " + str(self.dead) + "  /  " + str(self.max_score))
-            print(self.agent.state)
-            print(str(self.agent.previous_state) + "   /  " + str(self.agent.last_action))
-            print(self.agent.reward)
+            print("dead : " + str(self.dead) + "  /  " + str(self.agent.reward) + str(self.max_score) + " / " + str(self.agent.state) + " // " + (str(self.agent.previous_state) + "   /  " + str(self.agent.last_action)))
+
 
     def on_key_press(self, key, modifiers):
         if key == arcade.key.UP or key == arcade.key.W or key == arcade.key.SPACE:
