@@ -2,7 +2,9 @@ import arcade
 from src.global_variables import *
 from src.environment import *
 from src.game_objects import *
+import os
 import random
+import csv
 
 class Agent(Game_object):
     def __init__(self, environment):
@@ -39,9 +41,10 @@ class Agent(Game_object):
         self.center_x = 64
         self.texture = texture
 
+
     def down(self):
         texture = arcade.load_texture("images/dinosaur_frame4.png")
-        self.center_x = 75
+        self.center_x = 64
         self.texture = texture
 
     def reset(self):
@@ -57,8 +60,8 @@ class Agent(Game_object):
         self.previous_state3 = self.previous_state2
         self.previous_state2 = self.previous_state
         self.previous_state = self.state
-        self.state = self.get_state()
 
+        self.state = self.get_state()
         self.reward = self.environment.apply(action)
         self.score += self.reward
 
@@ -72,9 +75,22 @@ class Agent(Game_object):
     def update_policy(self):
         self.policy.update(self.previous_state, self.state, self.last_action, self.reward, self.policy.learning_rate)
 
+    def get_with_by_last_action(self):
+        withHeightAgent = [128, 128]
+        if self.last_action == 'D':
+            withHeightAgent = [128, 64]
+        return withHeightAgent
 
+    def get_height(self):
+        return self.get_with_by_last_action()[1]
 
-
+    def get_center_y(self):
+        agent_height = self.get_with_by_last_action()[1]
+        if agent_height == 64:
+            agent_center_y = self.center_y - (self.height // 2)
+        else:
+            agent_center_y = self.center_y
+        return agent_center_y
 
 class Window(arcade.Window):
     def __init__(self, agent):
@@ -85,12 +101,16 @@ class Window(arcade.Window):
         arcade.set_background_color(arcade.csscolor.WHITE)
         self.dead = 0
         self.max_score = 0
+        self.saveaction = 'W'
+        self.test = 0
+
 
     def setup(self):
         self.player_list = arcade.SpriteList()
         self.agent.starting_point()
         self.player_list.append(self.agent)
         self.agent.environment.setup(self.agent)
+        self.testbool = True
 
     def on_draw(self):
         arcade.start_render()
@@ -106,36 +126,29 @@ class Window(arcade.Window):
 
         state = self.agent.get_state()
 
-        if self.stage % 5 == 0 or state[2] == 224:
-            if self.agent.environment.can_jump():
-                action = self.agent.best_action()
-                self.agent.do(action)
-                self.agent.update_policy()
-
         if self.agent.environment.collision:
             self.agent.reward = REWARD_STUCK
             self.agent.update_policy()
             if self.max_score < self.agent.score:
                 self.max_score = self.agent.score
             self.agent.environment.collision = False
+            print(str(self.dead) + " : " + str(self.agent.last_action))
             self.agent.reset()
             self.dead += 1
 
-            print("dead : " + str(self.dead) + "  /  " + str(self.agent.reward) + str(self.max_score) + " / " + str(self.agent.state) + " // " + (str(self.agent.previous_state) + "   /  " + str(self.agent.last_action)))
+        if self.stage % 5 == 0 or state[2] == 224:
+            if self.agent.environment.can_jump():
+                action = self.agent.best_action()
+                self.agent.do(action)
+                self.agent.update_policy()
 
-
-    def on_key_press(self, key, modifiers):
-        if key == arcade.key.UP or key == arcade.key.W or key == arcade.key.SPACE:
-            if  self.agent.environment.physique_engine.can_jump():
-                self.agent.change_y = PLAYER_JUMP_SPEED
-
-    def on_key_release(self, key, modifiers):
-        if key == arcade.key.LEFT or key == arcade.key.A:
-            self.agent.change_x = 0
-        elif key == arcade.key.RIGHT or key == arcade.key.D:
-            self.agent.change_x = 0
-
-
+    def save_q_table(self):
+        save_name = "q_table.csv"
+        if os.path.exists(save_name):
+            os.remove(save_name)
+        w = csv.writer(open(save_name, "w"))
+        for key, val in self.agent.policy.table.items():
+            w.writerow([key, val])
 
 def main():
     """ Main method """

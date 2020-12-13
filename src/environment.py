@@ -13,16 +13,26 @@ class Environment:
                                                              self.ground_list,
                                                              GRAVITY)
 
-
     def update_collision(self):
-        if len(arcade.check_for_collision_with_list(self.agent, self.enemy_list)) > 0:
+        col_y =  self.enemy_list.colYWithAgent(self.agent)
+        col_x =  self.enemy_list.colXWithAgent(self.agent)
+
+        check_for_collision_with_list = len(arcade.check_for_collision_with_list(self.agent, self.enemy_list)) > 0
+
+        if check_for_collision_with_list and col_x and col_y:
             self.collision = True
+
+        if check_for_collision_with_list and col_x and not col_y:
+            self.agent_is_below_enemy = True
+
+        return col_x, col_y, check_for_collision_with_list
+
 
     def update(self):
         self.ground_list.scrool()
         self.ground_list.pop(1280)
         self.enemy_list.scrool()
-        self.enemy_list.pop(1280)
+        self.enemy_list.pop(2560)
         self.update_collision()
         self.total_scrool += SCROOL_SPEED
 
@@ -47,6 +57,11 @@ class Environment:
         if self.collision:
             reward = REWARD_STUCK
 
+        if not self.collision and self.agent_is_below_enemy:
+            reward = REWARD_BELOW_ENEMY
+            self.agent_is_below_enemy = False
+            print("is below")
+
         return reward
 
     def reset(self):
@@ -55,6 +70,7 @@ class Environment:
         self.enemy_list = self.factory.init_enemies_list()
         self.reward = 0
         self.collision = False
+        self.agent_is_below_enemy = False
         self.isDown = False
         self.canjump = False
         self.last_jump = None
@@ -104,6 +120,7 @@ class Policy:  # Q-table  (self, states de l'environnement, actions <<up, down>>
         self.table[previous_state][last_action] += learning_rate * \
                                                    (reward + self.discount_factor * maxQ - self.table[previous_state][
                                                        last_action])
+
 
 
 
