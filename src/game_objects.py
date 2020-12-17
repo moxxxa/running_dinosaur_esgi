@@ -9,8 +9,8 @@ class Game_object(arcade.Sprite):
 
     def collisionX(self, other_game_object):
 
-        x_min = self.center_x - self.width // 2
-        x_max = self.center_x + self.width // 2
+        x_min = self.center_x - self.get_width() // 2
+        x_max = self.center_x + self.get_width() // 2
 
         x_min_agent = other_game_object.center_x - other_game_object.get_width() // 2
         x_max_agent = other_game_object.center_x + other_game_object.get_width() // 2

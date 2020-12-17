@@ -136,7 +136,7 @@ class Window(arcade.Window):
             if self.max_score < self.agent.score:
                 self.max_score = self.agent.score
             self.agent.environment.collision = False
-            print(str(self.dead) + " : " + str(self.agent.last_action))
+            # print(str(self.dead) + " : " + str(self.agent.last_action))
             self.agent.reset()
             self.dead += 1
 

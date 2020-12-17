@@ -67,7 +67,6 @@ class Environment:
         if not self.collision and self.agent_is_below_enemy:
             reward = REWARD_BELOW_ENEMY
             self.agent_is_below_enemy = False
-            print("is below")
 
         return reward
 
