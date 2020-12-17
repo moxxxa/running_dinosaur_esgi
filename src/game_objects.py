@@ -18,7 +18,6 @@ class Game_object(arcade.Sprite):
         return (x_max_agent > x_min or x_min_agent > x_min) and (x_max_agent < x_max or x_min_agent < x_max)
 
     def collisionY(self, other_game_object):
-
         x_min = self.get_center_y() - self.get_height() // 2
         x_max = self.get_center_y() + self.get_height() // 2
 
