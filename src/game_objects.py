@@ -5,14 +5,15 @@ from src.global_variables import *
 class Game_object(arcade.Sprite):
     def __init__(self, image_source, scaling):
         super().__init__(image_source, scaling)
+        self.updateNum = 0
 
-    def collisionWithX(self, agent, agent_width):
+    def collisionX(self, other_game_object):
 
         x_min = self.center_x - self.width // 2
         x_max = self.center_x + self.width // 2
 
-        x_min_agent = agent.center_x - agent_width // 2
-        x_max_agent = agent.center_x + agent_width // 2
+        x_min_agent = other_game_object.center_x - other_game_object.get_width() // 2
+        x_max_agent = other_game_object.center_x + other_game_object.get_width() // 2
 
         return (x_max_agent > x_min or x_min_agent > x_min) and (x_max_agent < x_max or x_min_agent < x_max)
 
@@ -32,24 +33,49 @@ class Game_object(arcade.Sprite):
     def get_height(self):
         return self.height
 
+    def get_width(self):
+        return self.width
+
+
+    def update_animation(self, delta_time: float = 1/60):
+        print("salut")
+
 
 class Game_object_factory():
     def __init__(self):
         pass
 
     def init_grounds_list(self):
-        image_source = "images/grassHalf_mid.png"
-        ground_list = listWall(64)
-        for x in range(-64, 1344, 64):
+        image_source = "images/ground.png"
+        ground_list = listWall()
+
+        wall = Game_object(image_source, TILE_SCALING)
+
+        for x in range(0, int(wall.width * 3), int(wall.width)):
             wall = Game_object(image_source, TILE_SCALING)
             wall.center_x = x
             wall.center_y = 32
             ground_list.append(wall)
+
         return ground_list
+
+    def init_clouds_list(self):
+        image_source = "images/clouds.png"
+        clouds_list = listWall()
+
+        wall = Game_object(image_source, TILE_SCALING)
+
+        for x in range(0, int(wall.width * 3), int(wall.width)):
+            wall = Game_object(image_source, TILE_SCALING)
+            wall.center_x = x
+            wall.center_y = 350
+            clouds_list.append(wall)
+
+        return clouds_list
 
     def init_enemies_list(self):
         image_source = "images/bird1.png"
-        enemy_list = listWall(1280)
+        enemy_list = listWall()
 
         wall = Game_object(image_source, ENEMY_SCALING)
         wall.center_x = 2560
@@ -65,7 +91,7 @@ class Game_object_factory():
 
     def init_bird(self):
         image_source = "images/grassHalf_mid.png"
-        ground_list = listWall(64)
+        ground_list = listWall()
         for x in range(-64, 1344, 64):
             wall = Game_object(image_source, TILE_SCALING)
             wall.center_x = x
@@ -77,20 +103,23 @@ class Game_object_factory():
 
 
 class listWall(arcade.SpriteList):
-    def __init__(self, scrollSchedule):
+    def __init__(self):
         super().__init__(use_spatial_hash=True)
         self.scroolValue = 0
-        self.scroolSchedule = int(scrollSchedule)
+
         self.delete = False
 
     def scrool(self):
+        self.scroolObject(SCROOL_SPEED)
+
+    def scroolObject(self, speed):
         for i in range(0, len(self.sprite_list)):
-            self.sprite_list[i].center_x -= SCROOL_SPEED
-            self.scroolValue += SCROOL_SPEED
+            self.sprite_list[i].center_x -= speed
+            self.scroolValue += speed
 
     def pop(self, center_x):
         for i in range(0, len(self.sprite_list)):
-            if self.sprite_list[i].center_x < -64:
+            if self.sprite_list[i].center_x < self.sprite_list[i].width * -1:
                 self.sprite_list[i].center_x = center_x
 
             if self.sprite_list[i].center_x < 0:
@@ -112,8 +141,12 @@ class listWall(arcade.SpriteList):
         return reward
 
     def colXWithAgent(self, agent):
-        mob = self.get_min_x().collisionWithX(agent, agent.get_with_by_last_action()[0])
-        mob = mob or agent.collisionWithX(self.get_min_x(), self.get_min_x().width)
+
+        next_enemy = self.get_min_x()
+
+        mob = next_enemy.collisionX(agent)
+        mob = mob or agent.collisionX(next_enemy)
+
         return mob
 
     def colYWithAgent(self, agent):

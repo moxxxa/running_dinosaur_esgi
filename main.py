@@ -84,6 +84,9 @@ class Agent(Game_object):
     def get_height(self):
         return self.get_with_by_last_action()[1]
 
+    def get_width(self):
+        return self.get_with_by_last_action()[0]
+
     def get_center_y(self):
         agent_height = self.get_with_by_last_action()[1]
         if agent_height == 64:
@@ -116,6 +119,7 @@ class Window(arcade.Window):
         arcade.start_render()
         self.agent.environment.ground_list.draw()
         self.agent.environment.enemy_list.draw()
+        self.agent.environment.cloud_list.draw()
         self.player_list.draw()
         arcade.draw_text(f"Score: {self.agent.score}", 10, 10, arcade.csscolor.BLACK, 20)
 

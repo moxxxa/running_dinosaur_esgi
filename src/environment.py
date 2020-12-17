@@ -5,6 +5,9 @@ from src.game_objects import *
 
 class Environment:
     def __init__(self):
+        self.factory = Game_object_factory()
+        self.ground_list = self.factory.init_grounds_list()
+        self.cloud_list = self.factory.init_clouds_list()
         self.reset()
 
     def setup(self, agent):
@@ -31,6 +34,10 @@ class Environment:
     def update(self):
         self.ground_list.scrool()
         self.ground_list.pop(1280)
+
+        self.cloud_list.scroolObject(SCROOL_SPEED // 2)
+        self.cloud_list.pop(1280)
+
         self.enemy_list.scrool()
         self.enemy_list.pop(2560)
         self.update_collision()
@@ -65,9 +72,10 @@ class Environment:
         return reward
 
     def reset(self):
-        self.factory = Game_object_factory()
-        self.ground_list = self.factory.init_grounds_list()
+
+
         self.enemy_list = self.factory.init_enemies_list()
+
         self.reward = 0
         self.collision = False
         self.agent_is_below_enemy = False
