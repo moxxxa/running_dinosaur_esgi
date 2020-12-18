@@ -73,7 +73,11 @@ class Agent(Game_object):
 
 
     def update_policy(self):
-        self.policy.update(self.previous_state, self.state, self.last_action, self.reward, self.policy.learning_rate)
+        self.policy.update(self.previous_state, self.state, self.last_action, int(self.reward), self.policy.learning_rate)
+        if self.reward > 5:
+            print("salut")
+            self.policy.update(self.previous_state2, self.previous_state, self.last_action2, int(self.reward * 0.2), self.policy.learning_rate)
+            self.policy.update(self.previous_state3, self.previous_state2, self.last_action3, int(self.reward * 0.1), self.policy.learning_rate)
 
     def get_with_by_last_action(self):
         withHeightAgent = [128, 128]
@@ -136,11 +140,12 @@ class Window(arcade.Window):
             if self.max_score < self.agent.score:
                 self.max_score = self.agent.score
             self.agent.environment.collision = False
-            # print(str(self.dead) + " : " + str(self.agent.last_action))
+            print(str(self.dead) + " : " + str(self.agent.last_action) + "  " + str(self.agent.previous_state))
             self.agent.reset()
             self.dead += 1
+            self.save_q_table()
 
-        if self.stage % 5 == 0 or state[2] == 224:
+        if self.stage % 2 == 0:
             if self.agent.environment.can_jump():
                 action = self.agent.best_action()
                 self.agent.do(action)

@@ -36,10 +36,6 @@ class Game_object(arcade.Sprite):
         return self.width
 
 
-    def update_animation(self, delta_time: float = 1/60):
-        print("salut")
-
-
 class Game_object_factory():
     def __init__(self):
         pass
@@ -72,34 +68,44 @@ class Game_object_factory():
 
         return clouds_list
 
-    def init_enemies_list(self):
+    def init_bird(self, centerx):
         image_source = "images/bird1.png"
+        bird = Game_object(image_source, ENEMY_SCALING)
+        bird.center_x = centerx
+        bird.center_y = 120
+        return bird
+
+    def init_bird_top(self, centerx):
+        image_source = "images/bird1.png"
+        bird = Game_object(image_source, ENEMY_SCALING)
+        bird.center_x = centerx
+        bird.center_y = 200
+        return bird
+
+    def init_tree(self, centerx):
+        image_source = "images/tree.png"
+        tree = Game_object(image_source, ENEMY_SCALING)
+        tree.center_x = centerx
+        tree.center_y = 95
+        return tree
+
+    def init_tree3(self, centerx):
+        image_source = "images/tree3.png"
+        tree = Game_object(image_source, ENEMY_SCALING)
+        tree.center_x = centerx
+        tree.center_y = 85
+        return tree
+
+    def init_enemies_list(self):
+
         enemy_list = listWall()
 
-        wall = Game_object(image_source, ENEMY_SCALING)
-        wall.center_x = 2560
-        wall.center_y = 120
-        enemy_list.append(wall)
-
-        wall = Game_object(image_source, ENEMY_SCALING)
-        wall.center_x = 1280
-        wall.center_y = 200
-        enemy_list.append(wall)
+        enemy_list.append(self.init_tree(5120))
+        enemy_list.append(self.init_bird(2560))
+        enemy_list.append(self.init_bird_top(3840))
+        enemy_list.append(self.init_tree3(1280))
 
         return enemy_list
-
-    def init_bird(self):
-        image_source = "images/grassHalf_mid.png"
-        ground_list = listWall()
-        for x in range(-64, 1344, 64):
-            wall = Game_object(image_source, TILE_SCALING)
-            wall.center_x = x
-            wall.center_y = 32
-            ground_list.append(wall)
-        return ground_list
-
-
-
 
 class listWall(arcade.SpriteList):
     def __init__(self):
