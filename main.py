@@ -1,9 +1,6 @@
-import arcade
-from src.global_variables import *
 from src.environment import *
 from src.game_objects import *
 import os
-import random
 import csv
 
 class Agent(Game_object):
@@ -21,7 +18,7 @@ class Agent(Game_object):
         self.previous_state = self.state
         self.previous_state3 = self.state
         self.previous_state2 = self.state
-
+        self.foot = 'left'
         self.last_action = 'W'
         self.last_action2 = self.last_action
         self.last_action3 = self.last_action
@@ -37,13 +34,19 @@ class Agent(Game_object):
         self.reset()
 
     def walk(self):
-        texture = arcade.load_texture("images/dinosaur_frame2.png")
+        if self.foot == 'left':
+            texture = arcade.load_texture("images/dinosaur_frame2.png")
+        else:
+            texture = arcade.load_texture("images/dinosaur_frame3.png")
         self.center_x = 64
         self.texture = texture
 
 
     def down(self):
-        texture = arcade.load_texture("images/dinosaur_frame4.png")
+        if self.foot == 'left':
+            texture = arcade.load_texture("images/dinosaur_frame5.png")
+        else:
+            texture = arcade.load_texture("images/dinosaur_frame4.png")
         self.center_x = 64
         self.texture = texture
 
@@ -81,9 +84,6 @@ class Agent(Game_object):
             withHeightAgent = [128, 64]
         return withHeightAgent
 
-    def get_height(self):
-        return self.get_with_by_last_action()[1]
-
     def get_center_y(self):
         agent_height = self.get_with_by_last_action()[1]
         if agent_height == 64:
@@ -101,7 +101,6 @@ class Window(arcade.Window):
         arcade.set_background_color(arcade.csscolor.WHITE)
         self.dead = 0
         self.max_score = 0
-        self.saveaction = 'W'
         self.test = 0
 
 
@@ -123,6 +122,11 @@ class Window(arcade.Window):
         self.agent.environment.physique_engine.update()
         self.agent.environment.update()
         self.stage += 1
+
+        if self.stage % 10 == 0:
+            self.agent.foot = "right"
+        else:
+            self.agent.foot = "left"
 
         state = self.agent.get_state()
 
