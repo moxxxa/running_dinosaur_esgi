@@ -13,7 +13,6 @@ class Agent(Game_object):
 
         self.policy = Policy(ACTIONS)
         self.environment = environment
-        self.donum = 0
         self.reward = 0
         self.center_x = 64
         self.center_y = 128
@@ -21,7 +20,7 @@ class Agent(Game_object):
         self.previous_state = self.state
         self.previous_state3 = self.state
         self.previous_state2 = self.state
-
+        self.foot = 'left'
         self.last_action = 'W'
         self.last_action2 = self.last_action
         self.last_action3 = self.last_action
@@ -37,13 +36,19 @@ class Agent(Game_object):
         self.reset()
 
     def walk(self):
-        texture = arcade.load_texture("images/dinosaur_frame2.png")
+        if self.foot == 'left':
+            texture = arcade.load_texture("images/dinosaur_frame2.png")
+        else:
+            texture = arcade.load_texture("images/dinosaur_frame3.png")
         self.center_x = 64
         self.texture = texture
 
 
     def down(self):
-        texture = arcade.load_texture("images/dinosaur_frame4.png")
+        if self.foot == 'left':
+            texture = arcade.load_texture("images/dinosaur_frame4.png")
+        else:
+            texture = arcade.load_texture("images/dinosaur_frame5.png")
         self.center_x = 64
         self.texture = texture
 
@@ -68,9 +73,6 @@ class Agent(Game_object):
         self.last_action3 = self.last_action2
         self.last_action2 = self.last_action
         self.last_action = action
-
-        self.donum += 1
-
 
     def update_policy(self):
         self.policy.update(self.previous_state, self.state, self.last_action, int(self.reward), self.policy.learning_rate)
@@ -131,6 +133,11 @@ class Window(arcade.Window):
         self.agent.environment.physique_engine.update()
         self.agent.environment.update()
         self.stage += 1
+
+        if self.stage % 5 == 0:
+            self.agent.foot = 'right';
+        else:
+            self.agent.foot = 'left';
 
         state = self.agent.get_state()
 
