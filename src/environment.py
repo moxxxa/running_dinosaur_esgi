@@ -8,6 +8,8 @@ class Environment:
         self.reset()
 
     def setup(self, agent):
+        #handle the difficulty of the game
+        self.spawn = 0
         self.agent = agent
         self.physique_engine = arcade.PhysicsEnginePlatformer(self.agent,
                                                              self.ground_list,
@@ -28,10 +30,10 @@ class Environment:
         return col_x, col_y, check_for_collision_with_list
 
 
-    def update(self):
-        self.ground_list.scrool()
+    def update(self, spawnRate):
+        self.ground_list.scrool(spawnRate)
         self.ground_list.pop(1280)
-        self.enemy_list.scrool()
+        self.enemy_list.scrool(spawnRate)
         self.enemy_list.pop(2560)
         self.update_collision()
         self.total_scrool += SCROOL_SPEED
@@ -76,6 +78,8 @@ class Environment:
         self.last_jump = None
         self.last_jump2 = None
         self.total_scrool = 0
+        #reset difficulty
+        self.spawn = 0
 
     def can_jump(self):
         return self.physique_engine.can_jump()

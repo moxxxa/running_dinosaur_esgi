@@ -44,6 +44,7 @@ class Game_object_factory():
             wall = Game_object(image_source, TILE_SCALING)
             wall.center_x = x
             wall.center_y = 32
+            wall.type = "freindly"
             ground_list.append(wall)
         return ground_list
 
@@ -51,29 +52,19 @@ class Game_object_factory():
         image_source = "images/bird1.png"
         enemy_list = listWall(1280)
 
-        wall = Game_object(image_source, ENEMY_SCALING)
-        wall.center_x = 2560
-        wall.center_y = 120
-        enemy_list.append(wall)
+        bird1 = Game_object(image_source, ENEMY_SCALING)
+        bird1.center_x = 2560
+        bird1.center_y = 120
+        bird1.type = "enemy"
+        enemy_list.append(bird1)
 
-        wall = Game_object(image_source, ENEMY_SCALING)
-        wall.center_x = 1280
-        wall.center_y = 200
-        enemy_list.append(wall)
+        bird2 = Game_object(image_source, ENEMY_SCALING)
+        bird2.center_x = 1280
+        bird2.center_y = 200
+        bird2.type = "enemy"
+        enemy_list.append(bird2)
 
         return enemy_list
-
-    def init_bird(self):
-        image_source = "images/grassHalf_mid.png"
-        ground_list = listWall(64)
-        for x in range(-64, 1344, 64):
-            wall = Game_object(image_source, TILE_SCALING)
-            wall.center_x = x
-            wall.center_y = 32
-            ground_list.append(wall)
-        return ground_list
-
-
 
 
 class listWall(arcade.SpriteList):
@@ -83,10 +74,16 @@ class listWall(arcade.SpriteList):
         self.scroolSchedule = int(scrollSchedule)
         self.delete = False
 
-    def scrool(self):
+    def scrool(self, spawn_rate):
         for i in range(0, len(self.sprite_list)):
-            self.sprite_list[i].center_x -= SCROOL_SPEED
-            self.scroolValue += SCROOL_SPEED
+            if self.sprite_list[i].type == "freindly":
+                new_spawn_rate = SCROOL_SPEED
+            else:
+                new_spawn_rate = SCROOL_SPEED + spawn_rate
+            if self.sprite_list[i].type == "enemy":
+                print('scroll speed + spawnRate =', new_spawn_rate)
+            self.sprite_list[i].center_x -= new_spawn_rate
+            self.scroolValue += new_spawn_rate
 
     def pop(self, center_x):
         for i in range(0, len(self.sprite_list)):

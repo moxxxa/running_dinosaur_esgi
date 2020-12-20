@@ -119,8 +119,9 @@ class Window(arcade.Window):
         arcade.draw_text(f"Score: {self.agent.score}", 10, 10, arcade.csscolor.BLACK, 20)
 
     def on_update(self, delta_time):
+        self.agent.environment.spawn += SPAWN_RATE
         self.agent.environment.physique_engine.update()
-        self.agent.environment.update()
+        self.agent.environment.update(self.agent.environment.spawn)
         self.stage += 1
 
         if self.stage % 10 == 0:
