@@ -1,6 +1,3 @@
-import arcade
-import arcade
-from src.global_variables import *
 from src.game_objects import *
 
 class Environment:
@@ -17,29 +14,27 @@ class Environment:
                                                              GRAVITY)
 
     def update_collision(self):
-        col_y =  self.enemy_list.colYWithAgent(self.agent)
-        col_x =  self.enemy_list.colXWithAgent(self.agent)
+        col_y =  self.enemy_list.collision_y_with_agent(self.agent)
+        col_x =  self.enemy_list.collision_x_with_agent(self.agent)
 
         check_for_collision_with_list = len(arcade.check_for_collision_with_list(self.agent, self.enemy_list)) > 0
 
         if check_for_collision_with_list and col_x and col_y:
             self.collision = True
-
         if check_for_collision_with_list and col_x and not col_y:
             self.agent_is_below_enemy = True
 
         return col_x, col_y, check_for_collision_with_list
 
-
     def update(self):
         self.ground_list.scrool()
         self.ground_list.pop(1280)
 
-        self.cloud_list.scroolObject(SCROOL_SPEED // 2)
+        self.cloud_list.scrool_object(SCROOL_SPEED // 2)
         self.cloud_list.pop(1280)
 
         self.enemy_list.scrool()
-        self.enemy_list.pop(2560)
+        self.enemy_list.popSprite(5120)
         self.update_collision()
         self.total_scrool += SCROOL_SPEED
 
@@ -67,14 +62,10 @@ class Environment:
         if not self.collision and self.agent_is_below_enemy:
             reward = REWARD_BELOW_ENEMY
             self.agent_is_below_enemy = False
-
         return reward
 
     def reset(self):
-
-
         self.enemy_list = self.factory.init_enemies_list()
-
         self.reward = 0
         self.collision = False
         self.agent_is_below_enemy = False
@@ -87,9 +78,7 @@ class Environment:
     def can_jump(self):
         return self.physique_engine.can_jump()
 
-
-
-class Policy:  # Q-table  (self, states de l'environnement, actions <<up, down>>)
+class Policy:
     def __init__(self, actions,
                  learning_rate=DEFAULT_LEARNING_RATE,
                  discount_factor=DEFAULT_DISCOUNT_FACTOR):
@@ -98,21 +87,19 @@ class Policy:  # Q-table  (self, states de l'environnement, actions <<up, down>>
         self.learning_rate = learning_rate
         self.discount_factor = discount_factor
 
-    def best_action(self, state):#state = position de dino (x,y)
-        if not state in self.table: # c'est-a-dire self.table[dinoState] est vide
+    def best_action(self, state):
+        if not state in self.table:
             self.table[state] = {}
             for a in self.actions:
                 self.table[state][a] = 0
-
         action = None
-        if bool(self.table): #check if table in not empty due to environment states update
+        if bool(self.table):
             for a in self.table[state]:
                 if action is None or self.table[state][a] > self.table[state][action]:
                     action = a
         return action
 
     def update(self, previous_state, state, last_action, reward, learning_rate):
-
         if not state in self.table:
             self.table[state] = {}
             for action in self.actions:
@@ -121,9 +108,7 @@ class Policy:  # Q-table  (self, states de l'environnement, actions <<up, down>>
                     self.table[state][action] = REWARD_UP
                 elif action == DOWN:
                     self.table[state][action] = REWARD_DOWN
-
         maxQ = max(self.table[state].values())
-
         self.table[previous_state][last_action] += learning_rate * \
                                                    (reward + self.discount_factor * maxQ - self.table[previous_state][
                                                        last_action])

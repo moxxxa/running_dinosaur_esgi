@@ -1,30 +1,31 @@
+# Arcade Settings
 SCREEN_WIDTH = 1000
 SCREEN_HEIGHT = 650
 SCREEN_TITLE = "Platformer"
 
-# Constants used to scale our sprites from their original size
+# Sprite scaling
 CHARACTER_SCALING = 1
 ENEMY_SCALING = 0.8
 TILE_SCALING = 0.5
 COIN_SCALING = 0.5
 
-# Movement speed of player, in pixels per frame
+# Game Settings
 PLAYER_MOVEMENT_SPEED = 5
 GRAVITY = 0.95
 PLAYER_JUMP_SPEED = 20
 SCROOL_SPEED = 12
 
+# Reward values
 REWARD_STUCK = -2000
 REWARD_DOWN = -1
 REWARD_UP = -10
-
 REWARD_DEFAULT = 1
 REWARD_BELOW_ENEMY = 20
 
-
-
+# Agent Action
 UP, DOWN, WALK = 'U', 'D', 'W'
 ACTIONS = [WALK, DOWN, UP]
 
+# Global Learning Settings
 DEFAULT_LEARNING_RATE = 1
 DEFAULT_DISCOUNT_FACTOR = 0.5

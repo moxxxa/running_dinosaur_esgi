@@ -7,8 +7,7 @@ class Game_object(arcade.Sprite):
         super().__init__(image_source, scaling)
         self.updateNum = 0
 
-    def collisionX(self, other_game_object):
-
+    def collision_x(self, other_game_object):
         x_min = self.center_x - self.get_width() // 2
         x_max = self.center_x + self.get_width() // 2
 
@@ -17,7 +16,7 @@ class Game_object(arcade.Sprite):
 
         return (x_max_agent > x_min or x_min_agent > x_min) and (x_max_agent < x_max or x_min_agent < x_max)
 
-    def collisionY(self, other_game_object):
+    def collision_y(self, other_game_object):
         x_min = self.get_center_y() - self.get_height() // 2
         x_max = self.get_center_y() + self.get_height() // 2
 
@@ -101,8 +100,8 @@ class Game_object_factory():
         enemy_list = listWall()
 
         enemy_list.append(self.init_tree(5120))
-        enemy_list.append(self.init_bird(2560))
         enemy_list.append(self.init_bird_top(3840))
+        enemy_list.append(self.init_bird(2560))
         enemy_list.append(self.init_tree3(1280))
 
         return enemy_list
@@ -115,9 +114,9 @@ class listWall(arcade.SpriteList):
         self.delete = False
 
     def scrool(self):
-        self.scroolObject(SCROOL_SPEED)
+        self.scrool_object(SCROOL_SPEED)
 
-    def scroolObject(self, speed):
+    def scrool_object(self, speed):
         for i in range(0, len(self.sprite_list)):
             self.sprite_list[i].center_x -= speed
             self.scroolValue += speed
@@ -126,18 +125,24 @@ class listWall(arcade.SpriteList):
         for i in range(0, len(self.sprite_list)):
             if self.sprite_list[i].center_x < self.sprite_list[i].width * -1:
                 self.sprite_list[i].center_x = center_x
+            if self.sprite_list[i].center_x < 0:
+                self.delete = True
 
+    def popSprite(self, center_x):
+        for i in range(0, len(self.sprite_list)):
+            if self.sprite_list[i].center_x < -50:
+                self.sprite_list[i].center_x = center_x
             if self.sprite_list[i].center_x < 0:
                 self.delete = True
 
     def get_min_x(self):
         game_object = self.sprite_list[0]
         for i in range(0, len(self.sprite_list)):
-            if self.sprite_list[i].center_x < game_object.center_x and self.sprite_list[i].center_x > -128:
+            if game_object.center_x > self.sprite_list[i].center_x > -128:
                 game_object = self.sprite_list[i]
         return game_object
 
-    def reqardByAction(self, action):
+    def reqard_by_action(self, action):
         reward = REWARD_DEFAULT
         if action == UP:
             reward = REWARD_UP
@@ -145,19 +150,16 @@ class listWall(arcade.SpriteList):
             reward = REWARD_DOWN
         return reward
 
-    def colXWithAgent(self, agent):
-
+    def collision_x_with_agent(self, agent):
         next_enemy = self.get_min_x()
-
-        mob = next_enemy.collisionX(agent)
-        mob = mob or agent.collisionX(next_enemy)
-
+        mob = next_enemy.collision_x(agent)
+        mob = mob or agent.collision_x(next_enemy)
         return mob
 
-    def colYWithAgent(self, agent):
+    def collision_y_with_agent(self, agent):
         next_enemy = self.get_min_x()
-        mob = next_enemy.collisionY(agent)
-        mob = mob or agent.collisionY(next_enemy)
+        mob = next_enemy.collision_y(agent)
+        mob = mob or agent.collision_y(next_enemy)
         return mob
 
 
